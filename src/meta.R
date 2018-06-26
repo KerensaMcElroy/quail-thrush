@@ -22,15 +22,25 @@ write(specimens, file='analysis/specimens_meta.csv')
 
 # used as input to ozcam catalogue search, then selected any cinclosoma options. Resulted in following file:
 
-ozcam <- read_tsv('data/2018-06-22_cinclosoma.tsv', col_names=TRUE)
-
+ozcam <- read_csv('data/records-2018-06-26.csv', col_names=TRUE)
+meta<- rename(meta, catalogNumber = specimen)
 not_found_oz<- setdiff(ozcam$catalogNumber, specimens)
 not_found_spec <- setdiff(specimens, ozcam$catalogNumber)
-#need to go back to ozcam and manually find B07704, A17964
-#B07704 is B7704
-#A17964 is from Gaynor - she has marked this 'x'. Will wait to hear back from WAM.
-ozcam[1,13]
-ozcam[1,14]
-ozcam[1,27]
 
-ozcam$catalogNumber
+#A17964 is from Gaynor - she has marked this 'x'. WAM says not to be put on ALA - will exclude for now.
+
+meta <- inner_join(meta, ozcam, by = "catalogNumber") %>%
+  select_if(colSums(!is.na(.)) > 0)
+
+
+meta <- select(meta, one_of(c("file", "catalogNumber", "decimalLatitude", "decimalLongitude", "library", "centre", "date", "species", "institutionCode", "collectionCode", "recordedBy", "sex", "eventDate", "lifeStage", "stateProvince", "verbatimLocality"))) %>%
+  rename(seqCentre = centre) %>%
+  rename(libDate = date) %>%
+  mutate(species = str_replace(species, 'cinclosoma', 'Cinclosoma')) %>%
+  mutate(species = str_replace(species, 'Clarum', '_clarum')) %>%
+  mutate(species = str_replace(species, 'Fordianum','_fordianum')) %>%
+  mutate(species = str_replace(species, 'Castanotum','_castanotum')) %>%
+  mutate(species = str_replace(species, 'Punctatum','_punctatum')) %>%
+  mutate(species = str_replace(species, 'ptilorrhoaCaerulescens','Cinclosoma_cinnamomeum_alisteri'))
+
+#write(colnames(meta), file='analysis/col_names.csv')
