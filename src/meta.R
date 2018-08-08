@@ -15,6 +15,7 @@ library_meta <- library_meta %>%
 
 meta <- bind_rows(library_meta, quail_meta)
 
+
 # now we need to switch over to ozcam to get list of museums...
 
 specimens <- unique(meta$specimen)
@@ -23,14 +24,19 @@ write(specimens, file='analysis/specimens_meta.csv')
 # used as input to ozcam catalogue search, then selected any cinclosoma options. Resulted in following file:
 
 ozcam <- read_csv('data/records-2018-06-26.csv', col_names=TRUE)
+#A17964 is from Gaynor - she has marked this 'x'. WAM says not to be put on ALA - will exclude for now. Sorted (see below)
+wam <- read_csv('data/2018.06.22_McElroy.csv', col_names=TRUE) %>% #sample in database that is not in OZCAM. See email trail with WAM (Rebecca Bray and Ron Johnstone) 
+  unite(catalogNumber, SUFFIX, REGNO,sep = '') %>%
+  select_if(colSums(!is.na(.)) > 0)
+
 meta<- rename(meta, catalogNumber = specimen)
 not_found_oz<- setdiff(ozcam$catalogNumber, specimens)
 not_found_spec <- setdiff(specimens, ozcam$catalogNumber)
 
-#A17964 is from Gaynor - she has marked this 'x'. WAM says not to be put on ALA - will exclude for now.
 
 meta <- inner_join(meta, ozcam, by = "catalogNumber") %>%
-  select_if(colSums(!is.na(.)) > 0)
+  inner_join(wam, by = "catalogNumber") #%>%
+#  select_if(colSums(!is.na(.)) > 0)
 
 
 meta <- select(meta, one_of(c("file", "catalogNumber", "decimalLatitude", "decimalLongitude", "library", "centre", "date", "species", "institutionCode", "collectionCode", "recordedBy", "sex", "eventDate", "lifeStage", "stateProvince", "verbatimLocality"))) %>%
@@ -43,4 +49,4 @@ meta <- select(meta, one_of(c("file", "catalogNumber", "decimalLatitude", "decim
   mutate(species = str_replace(species, 'Punctatum','_punctatum')) %>%
   mutate(species = str_replace(species, 'ptilorrhoaCaerulescens','Cinclosoma_cinnamomeum_alisteri'))
 
-#write(colnames(meta), file='analysis/col_names.csv')
+write_csv(meta, path='data/metadata.csv')
